@@ -1,0 +1,8 @@
+Filoi_Project_Pipelines.md
+decisions.md 
+project.md
+.claude
+.venv/
+__pycache__/
+*.pyc.
+.env
