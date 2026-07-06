@@ -12,11 +12,14 @@ function App() {
         e.preventDefault();
         
   
-      try {
+        try {
+            
           const res = await axios.post("http://127.0.0.1:8000/Credentials/", {
               username: username,
               password: password
           });
+          setUsername("");
+          setPassword("");
           console.log("auth successfull" + res);
       }
       catch (error) {
