@@ -3,12 +3,16 @@ import { useState } from 'react'
 function App() {
 
   return (
-    <div className="min-h-screen flex flex-col">
-          <header className="flex justify-end items-center border-4 border-solid border-red-600 h-auto p-4">
+    <div className="min-h-screen flex flex-col bg-[#1d5288]">
+          <header className="flex justify-end items-center  h-auto p-4">
 
               <div>
 
-                  <a href=""
+                  <a href="https://github.com/ateekshSood/Dhis2_Form_image_Data_capture.git" target="_blank" rel="noopener noreferrer"
+                      className="inline-block opacity-100 transition-opacity duration-200 hover:opacity-70">
+                      <img src="GitHub_Invertocat_Black.svg" alt="Github"
+                        className="h-8 w-8"></img>
+                  </a>
                   
               </div>
               
@@ -18,22 +22,22 @@ function App() {
 
           <main className="flex-1 flex flex-col justify-center items-center gap-3  ">
 
-            <div className="font-bold text-6xl font-mono w-min text-center border p-2 mb-18 mt-7  border-red-600">Dhis2 OCR Form Submission</div>
+            <div className="font-bold text-6xl font-mono w-min text-center p-2 mb-18 mt-7 text-white ">Dhis2 OCR Form Submission</div>
               
 
             <form
-                className="flex flex-col justify-center  border-2 border-solid border-purple-500 rounded-2xl p-4 gap-3 max-w-md">
+                className="flex flex-col  rounded-2xl p-4 gap-3 max-w-md">
   
                   
-                    <label htmlfor="username">Enter the Username : </label>
-                    <input type="text" className="border border-gray-400 bg-white px-3" id="username" required />
+                  <label htmlfor="username" className="text-white">Enter the Username : </label>
+                    <input type="text" className="border border-gray-400 bg-white px-3 rounded-full" id="username" placeholder="username" required />
     
-                    <label htmlfor="password">Enter the Password : </label>
-                    <input type="text" className="border border-gray-400 bg-white px-3" id="password" required/>
+                    <label htmlfor="password" className="text-white">Enter the Password : </label>
+                    <input type="text" className="border border-gray-400 bg-white px-3 rounded-full" id="password" placeholder="password" required/>
     
                 
     
-                  <button className=" border-4 solid border-blue-700 rounded-full w-full p-3">Submit</button>
+                  <button className="rounded-full w-full p-2 bg-white text-black mt-2">Submit</button>
   
             </form> 
 
