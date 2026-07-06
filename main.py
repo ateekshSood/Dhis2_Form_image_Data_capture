@@ -1,4 +1,5 @@
 from fastapi import FastAPI , HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
 import os 
@@ -7,6 +8,17 @@ import secrets
 import time
 
 app = FastAPI()
+
+origins=[
+    "http://localhost:5173"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class Credentials(BaseModel):
     username : str 
