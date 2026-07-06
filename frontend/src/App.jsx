@@ -1,6 +1,30 @@
-import { useState } from 'react'
+import axios from 'axios';
+import { useState } from 'react';
+
 
 function App() {
+
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+    
+    async function handleSubmit(e) {
+
+        e.preventDefault();
+        
+  
+      try {
+          const res = await axios.post("http://127.0.0.1:8000/Credentials/", {
+              username: username,
+              password: password
+          });
+          console.log("auth successfull" + res);
+      }
+      catch (error) {
+          console.log("auth failed" + error)
+      }
+      
+  }
+
 
   return (
     <div className="min-h-screen flex flex-col bg-[#1d5288]">
@@ -26,14 +50,19 @@ function App() {
               
 
             <form
-                className="flex flex-col  rounded-2xl p-4 gap-3 max-w-md">
+                  className="flex flex-col  rounded-2xl p-4 gap-3 max-w-md"
+                  onSubmit={handleSubmit}
+              >
   
                   
-                  <label htmlfor="username" className="text-white">Enter the Username : </label>
-                    <input type="text" className="border border-gray-400 bg-white px-3 rounded-full" id="username" placeholder="username" required />
+                  <label htmlFor="username" className="text-white">Enter the Username : </label>
+              <input type="text" className="border border-gray-400 bg-white px-3 rounded-full" id="username" placeholder="username" required
+              onChange={(e) => setUsername(e.target.value)}/>
     
-                    <label htmlfor="password" className="text-white">Enter the Password : </label>
-                    <input type="text" className="border border-gray-400 bg-white px-3 rounded-full" id="password" placeholder="password" required/>
+                    <label htmlFor="password" className="text-white">Enter the Password : </label>
+              <input type="text" className="border border-gray-400 bg-white px-3 rounded-full" id="password" placeholder="password" required
+              onChange={(e) => setPassword(e.target.value)}
+              />
     
                 
     
