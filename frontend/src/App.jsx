@@ -6,6 +6,7 @@ function App() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMessage, setError] = useState("");
     
     async function handleSubmit(e) {
 
@@ -18,13 +19,15 @@ function App() {
               username: username,
               password: password
           });
-          setUsername("");
-          setPassword("");
-          console.log("auth successfull" + res);
+          setError("");
+          sessionStorage.setItem("session_id", res.data)
       }
       catch (error) {
-          console.log("auth failed" + error)
-      }
+            setError(error.response.data.detail);
+        }
+
+        setUsername("");
+        setPassword("");
       
   }
 
@@ -49,23 +52,23 @@ function App() {
 
           <main className="flex-1 flex flex-col justify-center items-center gap-3  ">
 
-            <div className="font-bold text-6xl font-mono w-min text-center p-2 mb-18 mt-7 text-white ">Dhis2 OCR Form Submission</div>
+              <div className="font-bold text-6xl font-mono w-min text-center p-2 mb-18 mt-7 text-white ">Dhis2 OCR Form Submission</div>
+
+              {errorMessage && <div className="text-red-500 font-bold">{errorMessage}</div>}
               
 
             <form
                   className="flex flex-col  rounded-2xl p-4 gap-3 max-w-md"
-                  onSubmit={handleSubmit}
-              >
-  
-                  
+                  onSubmit={handleSubmit}>
+                    
                   <label htmlFor="username" className="text-white">Enter the Username : </label>
-              <input type="text" className="border border-gray-400 bg-white px-3 rounded-full" id="username" placeholder="username" required
-              onChange={(e) => setUsername(e.target.value)}/>
+                  <input type="text" className="border border-gray-400 bg-white px-3 rounded-full" id="username" placeholder="username" value={username} required
+                  onChange={(e) => setUsername(e.target.value)}/>
     
-                    <label htmlFor="password" className="text-white">Enter the Password : </label>
-              <input type="text" className="border border-gray-400 bg-white px-3 rounded-full" id="password" placeholder="password" required
-              onChange={(e) => setPassword(e.target.value)}
-              />
+                  <label htmlFor="password" className="text-white">Enter the Password : </label>
+                  <input type="password" className="border border-gray-400 bg-white px-3 rounded-full" id="password" placeholder="password" value={password} required
+                  onChange={(e) => setPassword(e.target.value)}
+                  />
     
                 
     
