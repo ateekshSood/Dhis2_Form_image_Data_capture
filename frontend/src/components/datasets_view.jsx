@@ -30,8 +30,14 @@ function DatasetView() {
                 }
             }
             catch (err) {
-              if (!ignore) {
-                setError(err.response.data.detail);
+                if (!ignore) {
+                  if (err.response === undefined) {
+                      setError("Something went wrong");
+                  }
+                  else {
+                    setError(err.response.data.detail);
+                  }
+                
               }
 
             }
@@ -69,13 +75,12 @@ function DatasetView() {
                 <label className="text-white" htmlFor="datasets">Choose a dataset : </label>
 
                 <select id="datasets"
-                  className="text-black bg-white rounded-2xl p-1"
-
-
+                    className="text-black bg-white rounded-2xl p-1"
+                    value = {selectedDataset}
                     onChange = {(e) => setDataset(e.target.value)}
 
                 >
-                    <option value="" disabled selected hidden>Choose a dataset...</option>
+                    <option value="" disabled hidden>Choose a dataset...</option>
 
                     {datasets.map((dataset) =>
 

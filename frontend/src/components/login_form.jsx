@@ -25,8 +25,15 @@ function LoginForm({onLoginSuccess}) {
           
             
       }
-      catch (error) {
-            setError(error.response.data.detail);
+        catch (error) {
+
+            if (error.response === undefined) {
+                setError("Something went wrong");
+            }
+            else {
+              setError(error.response.data.detail);
+            }
+            
         }
 
         setUsername("");
