@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useState } from 'react';
 
 
-function LoginForm() {
+function LoginForm({onLoginSuccess}) {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -20,10 +20,13 @@ function LoginForm() {
               password: password
           });
           setError("");
-          sessionStorage.setItem("session_id", res.data)
+            sessionStorage.setItem("session_id", res.data)
+            onLoginSuccess();
+          
+            
       }
       catch (error) {
-            setError(error.response.data);
+            setError(error.response.data.detail);
         }
 
         setUsername("");
