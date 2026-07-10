@@ -7,6 +7,7 @@ function DatasetView() {
     const [errorMessage, setError] = useState("");
     const [datasets, setDatasets] = useState([]);
     const [selectedDataset, setDataset] = useState("");
+    const [search, setSearchItem] = useState("");
 
 
     useEffect(() => {
@@ -49,7 +50,9 @@ function DatasetView() {
         return () => {
             ignore = true; // if unloads
         }
-} , []);
+    }, []);
+
+    const filteredDatasets = datasets.filter((dataset) => dataset.name.toLowerCase().includes(search.toLowerCase()));
 
     return (
 
@@ -72,17 +75,21 @@ function DatasetView() {
             <main className="flex-1 flex flex-col justify-center items-center gap-3">
 
                 {errorMessage && <div className="text-red-500 font-bold">{errorMessage}</div>}
-                <label className="text-white" htmlFor="datasets">Choose a dataset : </label>
+                <label className="text-white text-3xl mb-2" htmlFor="datasets">Choose a dataset : </label>
+
+                <input type="text" className="border border-gray-400 bg-white px-3 rounded-full w-86.25 m-3" id="searchDataset" placeholder="Search Dataset"
+                    onChange={(e) => setSearchItem(e.target.value)}
+                />
 
                 <select id="datasets"
-                    className="text-black bg-white rounded-2xl p-1"
+                    className="text-black bg-white rounded-2xl p-1 w-86.25"
                     value = {selectedDataset}
                     onChange = {(e) => setDataset(e.target.value)}
 
                 >
                     <option value="" disabled hidden>Choose a dataset...</option>
 
-                    {datasets.map((dataset) =>
+                    {filteredDatasets.map((dataset) =>
 
                         <option
 
@@ -96,9 +103,9 @@ function DatasetView() {
 
                 <div className="flex col gap-3 mt-3">
 
-                <label className="text-white" htmlFor="selectedDataset">Selected Dataset : </label>
+                <label className="text-white text-xl" htmlFor="selectedDataset">Selected Dataset : </label>
 
-                <div className="text-white" id="selectedDataset">{selectedDataset}</div>
+                <div className="text-white text-xl" id="selectedDataset">{selectedDataset}</div>
 
                 </div>
 
