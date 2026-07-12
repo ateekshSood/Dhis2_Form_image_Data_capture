@@ -2,7 +2,7 @@ import axios from "axios";
 import { useEffect } from "react";
 import { useState } from "react";
 
-function DatasetView() {
+function DatasetView({onSelectSuccess}) {
 
     const [errorMessage, setError] = useState("");
     const [datasets, setDatasets] = useState([]);
@@ -84,7 +84,8 @@ function DatasetView() {
                 <select id="datasets"
                     className="text-black bg-white rounded-2xl p-1 w-86.25"
                     value = {selectedDataset}
-                    onChange = {(e) => setDataset(e.target.value)}
+                    onChange= {(e) => setDataset(e.target.value) 
+                    }
 
                 >
                     <option value="" disabled hidden>Choose a dataset...</option>
@@ -110,7 +111,9 @@ function DatasetView() {
                 </div>
 
 
-                <button className="rounded-full px-6 py-2 bg-white text-black mt-2 hover:bg-gray-100 transition-colors">Submit</button>
+                <button className="rounded-full px-6 py-2 bg-white text-black mt-2 hover:bg-gray-100 transition-colors"
+                  onClick={onSelectSuccess}
+                >Submit</button>
 
 
 
