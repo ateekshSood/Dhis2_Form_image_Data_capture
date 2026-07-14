@@ -6,3 +6,4 @@ project.md
 __pycache__/
 *.pyc.
 .env
+UPLOAD_DIR
