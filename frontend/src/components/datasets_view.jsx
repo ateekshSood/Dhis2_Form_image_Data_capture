@@ -2,7 +2,7 @@ import axios from "axios";
 import { useEffect } from "react";
 import { useState } from "react";
 
-function DatasetView({onSelectSuccess}) {
+function DatasetView({onSelectSuccess , onSetDataset}) {
 
     const [errorMessage, setError] = useState("");
     const [datasets, setDatasets] = useState([]);
@@ -112,7 +112,7 @@ function DatasetView({onSelectSuccess}) {
 
 
                 <button className="rounded-full px-6 py-2 bg-white text-black mt-2 hover:bg-gray-100 transition-colors"
-                  onClick={onSelectSuccess}
+                    onClick={() => { onSelectSuccess(); onSetDataset(selectedDataset) }}
                 >Submit</button>
 
 
