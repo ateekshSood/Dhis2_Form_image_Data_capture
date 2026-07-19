@@ -21,7 +21,16 @@ if image is not None:
 
     x , y , w , h = cv2.boundingRect(biggest_contour)
 
-    cropped = image[y: y+h , x : x+w ]
-    cv2.imwrite("images/cropped_image.jpg" , cropped)
+    center , (width , height) , angle = cv2.minAreaRect(biggest_contour) 
 
-    print(cv2.minAreaRect(biggest_contour))
+    if angle < -45:
+        angle = 90 + angle 
+        (height , width) = (width , height)
+
+    m = cv2.getRotationMatrix2D(center , angle , 1.0)
+    rotated = cv2.warpAffine(image , m , image.shape[:2][::-1])
+    deskewed = cv2.getRectSubPix(rotated , image.shape[:2][::-1] , center) 
+    cv2.imwrite("images/deskewed_image.jpg" , deskewed)
+
+  
+    
