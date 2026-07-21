@@ -1,16 +1,10 @@
 import pytesseract as pt
 import cv2
-from pathlib import Path
 import re
 
-def getOcrResult() -> str:
+def getOcrResult(output_path) -> str:
     
-    current_file_path = Path(__file__)
-    parent = current_file_path.parent
-    file_path = parent / "images/adaptive_threshold_image.png"
-    
-    
-    
+    file_path = output_path
     preprocessed_image = cv2.imread(file_path , cv2.IMREAD_UNCHANGED)
     
     config = r'--psm 6'
