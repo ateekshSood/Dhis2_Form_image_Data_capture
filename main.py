@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
-import os 
+import os
 from dotenv import load_dotenv
 import secrets
 import time
@@ -32,7 +32,7 @@ app.add_middleware(
 )
 
 class Credentials(BaseModel):
-    username : str 
+    username : str
     password : str
 
 load_dotenv()
@@ -63,19 +63,19 @@ async def sendCredentials(credentials : Credentials):
         payload = (credentials.username , credentials.password)
         url = str(os.getenv("base_url")) +"/me"
         r = await client.get(url , auth=payload)
-    
+
         if(r.status_code != 200):
             raise HTTPException(status_code = int(r.status_code) , detail="Something went wrong")
-    
-        
+
+
         cookie =  r.cookies
         session_id = secrets.token_urlsafe()
         current_time = time.time()
-    
+
         cookiesDict[session_id] =(cookie , current_time)
-    
-        
-    
+
+
+
         return session_id
 
 
@@ -100,7 +100,7 @@ async def uploadForm(file : UploadFile = File(...) , dataset : str = Form(...) ,
     contents = b""
     while True:
         chunk = await file.read(CHUNK_SIZE)
-        if chunk == b"": #it returns empty byte obj when nothing is left to reaad can also use not chunk here 
+        if chunk == b"": #it returns empty byte obj when nothing is left to reaad can also use not chunk here
                         # but to remember it does that i used this
             break
 
@@ -109,14 +109,14 @@ async def uploadForm(file : UploadFile = File(...) , dataset : str = Form(...) ,
         if len(contents) > MAX_SIZE:
             raise HTTPException(status_code = 413 , detail="File Size is too large to process")
             # 413 = payload too large
-            
-        
+
+
 
     detected = filetype.guess(contents)
 
     if detected is None:
         raise HTTPException(status_code = 415 , detail = "Unsupported media type ")
-        # 415 = unsupporeted media type 
+        # 415 = unsupporeted media type
         # 400 = bad requeset
 
 
@@ -124,18 +124,18 @@ async def uploadForm(file : UploadFile = File(...) , dataset : str = Form(...) ,
 
     if detected.extension not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code = 415 , detail = "Unsupported Extension")
-        
+
     upload_id = secrets.token_urlsafe()
     filename = upload_id + "." + detected.extension
 
     os.makedirs(UPLOAD_DIR , exist_ok=True)
-    
+
     filepath = f"{UPLOAD_DIR}/{filename}"
 
     async with await anyio.open_file(filepath , "wb") as f:
         await f.write(contents)
-        
-    uploadsDict[upload_id] = (filepath , dataset , session_cookie) 
+
+    uploadsDict[upload_id] = (filepath , dataset , session_cookie)
 
     return upload_id
 
@@ -147,38 +147,52 @@ async def datasetMetadata(session_cookie : httpx.Cookies , dataset_name : str):
             "filter":f"name:eq:{dataset_name}",
             "fields":"id,name,dataSetElements[dataElement[id,name,valueType]]"
         }
-        
+
         r = await client.get(url , cookies = session_cookie , params=query_params)
 
         if r.status_code != 200:
             raise HTTPException(status_code = int(r.status_code) , detail = "Failed to fetch dataset metadata")
 
         return r.json()["dataSets"][0]["dataSetElements"]
-      
-      
+
+
 @app.post("/field_mapping/{upload_id}")
 async def fieldMapping(session_cookie : Annotated[httpx.Cookies , Depends(verify_session)] , upload_id : str):
 
     (file_path , dataset_name) = (uploadsDict[upload_id][0] , uploadsDict[upload_id][1])
 
-    
-    
+
+
     output_path =  await asyncio.to_thread(image_processing , file_path)
     text_content = await asyncio.to_thread(getOcrResult , output_path)
     field_list = await datasetMetadata(session_cookie , dataset_name)
-    
+
+    id_to_name = {}
+    for entry in field_list:
+        id_to_name[entry["dataElement"]["id"]] = entry["dataElement"]["name"]
+
+
     try:
         field_mapping = await llm_field_mapping(text_content , field_list)
+
+        for mapping in field_mapping:
+            mapping["name"] = id_to_name[mapping["dataElementId"]]
+
         return field_mapping
-    
+
+
+    except KeyError:
+        raise HTTPException(status_code = 400  , detail = "llm failed to map fields correctly . Please Upload clear photo ")
+
     except Exception as e:
         raise HTTPException(status_code = int(e.args[0]) , detail = "Failed to connect to llm")
-       
 
-        
-    
-    
-        
+
+
+
+
+
+
 @app.delete("/logout/{session_id}")
 def logout(session_id : str):
 
@@ -186,5 +200,5 @@ def logout(session_id : str):
 
     if removed is None:
         return {"detail":"session not found"}
-        
-    return {"detail" : "session deleted"} 
+
+    return {"detail" : "session deleted"}
