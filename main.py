@@ -9,6 +9,11 @@ import os
 from dotenv import load_dotenv
 import secrets
 import time
+import asyncio
+
+from image_pipeline.image_processing import image_processing
+from image_pipeline.tessearct_ocr import getOcrResult
+from llm_pipeline.llm_text_to_fiels import llm_field_mapping
 
 app = FastAPI()
 
@@ -49,7 +54,7 @@ async def verify_session(authorization : Annotated[str | None, Header()] = None)
         return cookiesDict[session_id][0]
 
     raise HTTPException(status_code=401 , detail="you are not authorized")
-            
+
 
 @app.post("/Credentials/")
 async def sendCredentials(credentials : Credentials):
@@ -134,12 +139,43 @@ async def uploadForm(file : UploadFile = File(...) , dataset : str = Form(...) ,
 
     return upload_id
 
+async def datasetMetadata(session_cookie : httpx.Cookies , dataset_name : str):
+
+    async with httpx.AsyncClient() as client:
+        url = str(os.getenv("base_url")) + "/dataSets"
+        query_params= {
+            "filter":f"name:eq:{dataset_name}",
+            "fields":"id,name,dataSetElements[dataElement[id,name,valueType]]"
+        }
+        
+        r = await client.get(url , cookies = session_cookie , params=query_params)
+
+        if r.status_code != 200:
+            raise HTTPException(status_code = int(r.status_code) , detail = "Failed to fetch dataset metadata")
+
+        return r.json()["dataSets"][0]["dataSetElements"]
+      
+      
+@app.post("/field_mapping/{upload_id}")
+async def fieldMapping(session_cookie : Annotated[httpx.Cookies , Depends(verify_session)] , upload_id : str):
+
+    (file_path , dataset_name) = (uploadsDict[upload_id][0] , uploadsDict[upload_id][1])
+
     
     
+    output_path =  await asyncio.to_thread(image_processing , file_path)
+    text_content = await asyncio.to_thread(getOcrResult , output_path)
+    field_list = await datasetMetadata(session_cookie , dataset_name)
     
+    try:
+        field_mapping = await llm_field_mapping(text_content , field_list)
+        return field_mapping
     
-            
-            
+    except Exception as e:
+        raise HTTPException(status_code = int(e.args[0]) , detail = "Failed to connect to llm")
+       
+
+        
     
     
         
