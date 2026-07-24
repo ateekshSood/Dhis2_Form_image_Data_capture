@@ -1,7 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 
-function FormUpload({selectedDataset}) {
+function FormUpload({selectedDataset , onUploadSuccess}) {
 
     const [file, setFile] = useState(null);
     const [errorMessage, setError] = useState("");
@@ -27,6 +27,7 @@ function FormUpload({selectedDataset}) {
               });
               sessionStorage.setItem("upload_id", res.data)
               setError("");
+              onUploadSuccess();
           }
           catch (err) {
               if (err.response === undefined) {
