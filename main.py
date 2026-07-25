@@ -92,6 +92,24 @@ async def fetchDatasets(session_cookie : Annotated[httpx.Cookies , Depends(verif
 
     return r.json()["dataSets"]
 
+@app.get("/dataset_org_units/{dataset_name}")
+async def getOrgUnit(dataset_name : str , session_cookie : Annotated[httpx.Cookies , Depends(verify_session)]):
+
+    async with httpx.AsyncClient() as client:
+        url = str(os.getenv("base_url")) + "/dataSets"
+        query_params = {
+            "filter": f"name:eq:{dataset_name}",
+            "fields": "id,organisationUnits[id , name]"
+        }
+        
+        r = await client.get(url , cookies = session_cookie , params=query_params) 
+
+        if r.status_code != 200:
+            raise HTTPException(status_code = int(r.status_code) , detail="Something went wrong")
+
+        r_json = r.json()
+        return {"orgUnit" : r_json["dataSets"][0]["organisationUnits"] , "dataSetId" :  r_json["dataSets"][0]["id"]}
+
 @app.post("/upload")
 async def uploadForm(file : UploadFile = File(...) , dataset : str = Form(...) , session_cookie : httpx.Cookies = Depends(verify_session) ):
     CHUNK_SIZE = 1024 * 10
