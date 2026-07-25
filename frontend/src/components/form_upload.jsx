@@ -1,7 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 
-function FormUpload({selectedDataset , onUploadSuccess}) {
+function FormUpload({selectedDataset , onUploadSuccess , org_unit_id , time_period , dataset_id}) {
 
     const [file, setFile] = useState(null);
     const [errorMessage, setError] = useState("");
@@ -16,7 +16,10 @@ function FormUpload({selectedDataset , onUploadSuccess}) {
           
           const formData = new FormData();
             formData.append("file", file);
-            formData.append("dataset" , selectedDataset)
+            formData.append("dataset", selectedDataset)
+            formData.append("org_unit_id", org_unit_id)
+            formData.append("time_period", time_period)
+            formData.append("dataset_id" , dataset_id)
   
           try {
               const session_id = sessionStorage.getItem("session_id");
