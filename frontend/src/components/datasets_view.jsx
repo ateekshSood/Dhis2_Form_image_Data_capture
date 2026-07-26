@@ -86,6 +86,7 @@ function DatasetView({onSelectSuccess , onSetDataset}) {
                     value = {selectedDataset}
                     onChange= {(e) => setDataset(e.target.value) 
                     }
+                    required
 
                 >
                     <option value="" disabled hidden>Choose a dataset...</option>
