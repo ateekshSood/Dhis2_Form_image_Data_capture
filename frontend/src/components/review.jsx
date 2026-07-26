@@ -7,6 +7,8 @@ function Review() {
     const [loading, setLoading] = useState(true);
     const [errorMessage, setError] = useState("");
     const [overrides, setOverRides] = useState({});
+    const [submitResult, setSubmitResult] = useState(null);
+    const [submit, setSubmit] = useState(false);
 
     useEffect(() => {
         async function fetchMapping() {
@@ -40,6 +42,50 @@ function Review() {
         fetchMapping();
     }, []);
 
+    async function handleSubmit() {
+
+        const upload_id = sessionStorage.getItem("upload_id");
+        const session_id = sessionStorage.getItem("session_id");
+        setSubmit(true);
+
+        const filteredOverrides = {};
+
+        for (const [key, value] of Object.entries(overrides)) {
+            if (value === "") {
+                continue;
+            }
+            else {
+                filteredOverrides[key] = value;
+            }
+        }
+
+        try {
+            const res = await axios.post(`http://127.0.0.1:8000/submit/${upload_id}`, { overrideDict: filteredOverrides }, {
+                headers: {
+                    "Authorization": "Bearer " + session_id
+                }
+
+            })
+
+            setSubmitResult(res.data)
+            
+        }
+        catch (error) {
+            if (error.response === undefined) {
+                setError("Something went wrong");
+            }
+            else {
+                setError(error.response.data.detail);
+            }
+        }
+        finally {
+            setSubmit(false);
+        }
+        
+        
+        
+    }
+
     if (loading) {
         return (
             <div className="flex min-h-screen flex-col justify-center items-center bg-[#1d5288]">
@@ -69,7 +115,7 @@ function Review() {
 
                 {errorMessage && <div className="text-red-500 font-bold">{errorMessage}</div>}
 
-                <div className="bg-white rounded-2xl p-6 max-w-5xl w-full mx-4 overflow-x-auto">
+                {!submitResult && (<div className="bg-white rounded-2xl p-6 max-w-5xl w-full mx-4 overflow-x-auto">
 
                   <table className="w-full text-left border-collapse">
   
@@ -111,9 +157,36 @@ function Review() {
                       </tbody>
                       
                       
-                    </table>
+                        </table>
+
+                    <div className="flex justify-center mt-4">
+                      <button
+                        onClick={handleSubmit}
+                        disabled={submit}
+                        className="bg-white text-[#1d5288] font-semibold px-6 py-2 rounded-full hover:opacity-80 disabled:opacity-50"
+                      >
+                        {submit ? "Submitting…" : "Submit"}
+                      </button>
+                    </div>
                 </div>
-                
+                    )}
+                  
+                    {submitResult && (
+                      <div className="bg-white rounded-2xl p-6 max-w-5xl w-full mx-4 mt-4">
+                        <p className="text-black">
+                          Imported: <span className="font-semibold">{submitResult.imported}</span>{"  "}
+                          Updated: <span className="font-semibold">{submitResult.updated}</span>{"  "}
+                          Deleted: <span className="font-semibold">{submitResult.deleted}</span>
+                        </p>
+                        <p className={submitResult.ignored > 0 ? "text-red-600 font-bold mt-1" : "text-black mt-1"}>
+                          Ignored: {submitResult.ignored}
+                          {submitResult.ignored > 0 && " — some fields were not accepted, check with your DHIS2 admin"}
+                        </p>
+                      </div>
+                    )}
+
+                    
+        
             </main>
           
         </div>
