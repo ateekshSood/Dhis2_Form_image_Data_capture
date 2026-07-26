@@ -35,6 +35,10 @@ class Credentials(BaseModel):
     username : str
     password : str
 
+
+# class Overrides(BaseModel):
+
+
 load_dotenv()
 cookiesDict = {}
 uploadsDict = {}
@@ -111,7 +115,10 @@ async def getOrgUnit(dataset_name : str , session_cookie : Annotated[httpx.Cooki
         return {"orgUnit" : r_json["dataSets"][0]["organisationUnits"] , "dataSetId" :  r_json["dataSets"][0]["id"]}
 
 @app.post("/upload")
-async def uploadForm(file : UploadFile = File(...) , dataset : str = Form(...) , session_cookie : httpx.Cookies = Depends(verify_session) ):
+async def uploadForm(file : UploadFile = File(...) , 
+    dataset : str = Form(...) , org_unit_id : str = Form(...) , time_period : str = Form(...) , dataset_id : str = Form(...) ,
+    session_cookie : httpx.Cookies = Depends(verify_session) ):
+        
     CHUNK_SIZE = 1024 * 10
     MAX_SIZE = 1024 * 1024 * 10
 
@@ -153,7 +160,8 @@ async def uploadForm(file : UploadFile = File(...) , dataset : str = Form(...) ,
     async with await anyio.open_file(filepath , "wb") as f:
         await f.write(contents)
 
-    uploadsDict[upload_id] = (filepath , dataset , session_cookie)
+    uploadsDict[upload_id] = {"file_path" : filepath ,"dataset_name" :  dataset , "session_cookie" : session_cookie , 
+                                "org_unit_id" :org_unit_id , "time_period" : time_period , "dataset_id" : dataset_id }
 
     return upload_id
 
@@ -163,7 +171,7 @@ async def datasetMetadata(session_cookie : httpx.Cookies , dataset_name : str):
         url = str(os.getenv("base_url")) + "/dataSets"
         query_params= {
             "filter":f"name:eq:{dataset_name}",
-            "fields":"id,name,dataSetElements[dataElement[id,name,valueType]]"
+            "fields":"id,name,dataSetElements[dataElement[id,name,valueType,categoryCombo[categoryOptionCombos[id,name]]]]"
         }
 
         r = await client.get(url , cookies = session_cookie , params=query_params)
@@ -171,27 +179,47 @@ async def datasetMetadata(session_cookie : httpx.Cookies , dataset_name : str):
         if r.status_code != 200:
             raise HTTPException(status_code = int(r.status_code) , detail = "Failed to fetch dataset metadata")
 
-        return r.json()["dataSets"][0]["dataSetElements"]
+        r_json = r.json()
+        categoryComboDict = {}
+
+        for element in  r_json["dataSets"][0]["dataSetElements"]:
+
+            if len(element["dataElement"]["categoryCombo"]["categoryOptionCombos"]) > 1:
+            
+                categoryComboDict[element["dataElement"]["id"]] = element["dataElement"]["categoryCombo"]["categoryOptionCombos"]
+
+        return {"field_list" : r_json["dataSets"][0]["dataSetElements"]  , "categoryCombos" : categoryComboDict}
 
 
 @app.post("/field_mapping/{upload_id}")
 async def fieldMapping(session_cookie : Annotated[httpx.Cookies , Depends(verify_session)] , upload_id : str):
 
-    (file_path , dataset_name) = (uploadsDict[upload_id][0] , uploadsDict[upload_id][1])
+    (file_path , dataset_name) = (uploadsDict[upload_id]["file_path"] , uploadsDict[upload_id]["dataset_name"])
 
 
 
     output_path =  await asyncio.to_thread(image_processing , file_path)
     text_content = await asyncio.to_thread(getOcrResult , output_path)
-    field_list = await datasetMetadata(session_cookie , dataset_name)
+    metaData = await datasetMetadata(session_cookie , dataset_name)
 
     id_to_name = {}
-    for entry in field_list:
+    for entry in metaData["field_list"]:
         id_to_name[entry["dataElement"]["id"]] = entry["dataElement"]["name"]
 
+    uploadsDict[upload_id]["categoryCombos"] = metaData["categoryCombos"]
+
+    IdCategoryCombos = {}
+
+    for entry in metaData["field_list"]:
+    
+        IdCategoryCombos[entry["dataElement"]["id"]] = entry["dataElement"]["categoryCombo"]["categoryOptionCombos"][0]["id"]
+
+    uploadsDict[upload_id]["IdCategoryCombos"] = IdCategoryCombos
 
     try:
-        field_mapping = await llm_field_mapping(text_content , field_list)
+        field_mapping = await llm_field_mapping(text_content , metaData["field_list"])
+
+        uploadsDict[upload_id]["field_mapping"] = field_mapping
 
         for mapping in field_mapping:
             mapping["name"] = id_to_name[mapping["dataElementId"]]
@@ -206,7 +234,8 @@ async def fieldMapping(session_cookie : Annotated[httpx.Cookies , Depends(verify
         raise HTTPException(status_code = int(e.args[0]) , detail = "Failed to connect to llm")
 
 
-
+@app.post("/submit/{upload_id}")
+def submitDetails(upload_id : str , session_cookies : Annotated[httpx.Cookies , Depends(verify_session)]):
 
 
 
