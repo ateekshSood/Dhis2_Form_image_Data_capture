@@ -36,7 +36,8 @@ class Credentials(BaseModel):
     password : str
 
 
-# class Overrides(BaseModel):
+class Overrides(BaseModel):
+    overrideDict : dict[str , str]
 
 
 load_dotenv()
@@ -235,11 +236,62 @@ async def fieldMapping(session_cookie : Annotated[httpx.Cookies , Depends(verify
 
 
 @app.post("/submit/{upload_id}")
-def submitDetails(upload_id : str , session_cookies : Annotated[httpx.Cookies , Depends(verify_session)]):
+async def submitDetails(upload_id : str , session_cookies : Annotated[httpx.Cookies , Depends(verify_session)] , overrides : Overrides):
+
+    (field_mapping , categoryCombo , idCategoryCombo , dataset_id , org_unit_id , time_period ) = (
+    uploadsDict[upload_id]["field_mapping"],
+    uploadsDict[upload_id]["categoryCombos"],
+    uploadsDict[upload_id]["IdCategoryCombos"],
+    uploadsDict[upload_id]["dataset_id"],
+    uploadsDict[upload_id]["org_unit_id"],
+    uploadsDict[upload_id]["time_period"]
+    )
+
+    dataValues = []
+
+    for entry in field_mapping:
+
+        dict_values = {}
+
+        id = entry["dataElementId"]
+
+        dict_values["dataElement"] = id
+        
+        if  id in categoryCombo:
+            continue
+
+        if id in overrides.overrideDict:
+            dict_values["value"] = overrides.overrideDict.get(id)
+
+        else:
+            dict_values["value"] = entry["value"]
+
+        dict_values["categoryOptionCombo"] = idCategoryCombo[id]
+
+        dataValues.append(dict_values)
+
+    async with httpx.AsyncClient() as client:
+        url = str(os.getenv("base_url")) + "/dataValueSets"
+
+        query_params = {
+            "dataSet" : dataset_id,
+            "orgUnit" : org_unit_id,
+            "period" : time_period,
+            "dataValues" : dataValues
+            
+        }
+
+        r = await client.post(url , cookies = session_cookies , json=query_params)
 
 
+        if r.status_code != 200:
+            raise HTTPException(status_code = 400 , detail = "Something went wrong in final submit request to dhis2")
 
+        r_json = r.json()
 
+        return r_json["importCount"]
+
+        
 @app.delete("/logout/{session_id}")
 def logout(session_id : str):
 
