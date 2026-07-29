@@ -20,6 +20,7 @@ def image_processing(file_path):
     
         #getting the biggest area boundary / contour
         contours , hierarchy= cv2.findContours(edge , cv2.RETR_LIST , cv2.CHAIN_APPROX_SIMPLE) # return tuple (contours , hierarchy)
+        # contours_img = cv2.drawContours(image.copy() , contours , -1 , (0 , 0 , 255))
         biggest_contour = max(contours , key=cv2.contourArea)
     
         center , (width , height) , angle = cv2.minAreaRect(biggest_contour) 
@@ -41,8 +42,10 @@ def image_processing(file_path):
 
         secret_token = secrets.token_urlsafe()
         output_path = str(Path(__file__).parent) + "/images/" + secret_token +".png"
+        # contour_path = str(Path(__file__).parent) + "/images/" + "contour" + ".png"
         cv2.imwrite(output_path  , adaptive_threshold_image)
+        # cv2.imwrite(contour_path  ,contours_img )
 
         return output_path
   
-    
+image_processing("real_sample_handwritten.jpg")
