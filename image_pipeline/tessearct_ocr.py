@@ -1,18 +1,67 @@
-import pytesseract as pt
+# import pytesseract as pt
 import cv2
-import re
+from PIL import Image
 
-def getOcrResult(output_path) -> str:
+def getOcrResult(output_path , model , image_processor , easyocr_reader) -> str:
+
+
+
+    #OLD TESSERACT CODE 
+    # ----------------------------------------------------------
     
+    # file_path = output_path
+    # preprocessed_image = cv2.imread(file_path , cv2.IMREAD_UNCHANGED)
+    
+    # config = r'--psm 6'
+    # flat_string = pt.image_to_string(preprocessed_image , config = config).split("\n")
+    # filtered_list = [line for line in flat_string if re.search(r'[a-zA-Z0-9]' , line)]        
+    # result_list = "\n".join(filtered_list)
+
+    # return result_list
+
+    # ----------------------------------------------------------------------------------
+
+
+    #NEW OCR CODE 
+
     file_path = output_path
     preprocessed_image = cv2.imread(file_path , cv2.IMREAD_UNCHANGED)
     
-    config = r'--psm 6'
-    flat_string = pt.image_to_string(preprocessed_image , config = config).split("\n")
-    filtered_list = [line for line in flat_string if re.search(r'[a-zA-Z0-9]' , line)]        
-    result_list = "\n".join(filtered_list)
+    result = easyocr_reader.detect(preprocessed_image)
 
-    return result_list
+    horizontal_list = result[0][0]
+
+    img_test = preprocessed_image.copy()
+    cropped_list = []
+    
+    for box in horizontal_list:
+      x_min , x_max , y_min , y_max = box
+      cropped_list.append(img_test[y_min : y_max , x_min : x_max].copy())
+
+    results_array = []
+    for img in cropped_list:
+      converted_image = Image.fromarray(cv2.cvtColor(img , cv2.COLOR_BGR2RGB))
+    
+      inputs = image_processor(images=converted_image, return_tensors="pt").to(model.device)
+      outputs = model(**inputs)
+      results = image_processor.post_process_text_recognition(outputs)
+
+      results_array.append(results["text"])
+
+    return results_array
+        
+        
+    
+
+
+
+
+
+
+
+
+
+
 
 # file = cv2.imread("real_sample_handwritten.jpg")
 # result = pt.image_to_data(file , output_type=pt.pytesseract.Output.DICT)
