@@ -1,4 +1,4 @@
-from fastapi import FastAPI , HTTPException , Header , Depends , File , UploadFile , Form
+from fastapi import FastAPI , HTTPException , Header , Depends , File , UploadFile , Form , Request
 import filetype
 import anyio
 from typing import Annotated
@@ -10,12 +10,16 @@ from dotenv import load_dotenv
 import secrets
 import time
 import asyncio
+from contextlib import asynccontextmanager
+from transformers import AutoImageProcessor, AutoModelForTextRecognition
+import easyocr
+
 
 from image_pipeline.image_processing import image_processing
 from image_pipeline.tessearct_ocr import getOcrResult
 from llm_pipeline.llm_text_to_fiels import llm_field_mapping
 
-app = FastAPI()
+app = FastAPI(lifespan = lifespan)
 
 SESSION_TTL_SECONDS = 3600
 UPLOAD_DIR = "UPLOAD_DIR"
@@ -43,6 +47,17 @@ class Overrides(BaseModel):
 load_dotenv()
 cookiesDict = {}
 uploadsDict = {}
+
+@asynccontextmanager
+async def lifespan(app : FastAPI):
+    model_path = "PaddlePaddle/PP-OCRv5_mobile_rec_safetensors"
+    app.state.model = AutoModelForTextRecognition.from_pretrained(model_path, device_map="auto")
+    app.state.image_processor = AutoImageProcessor.from_pretrained(model_path)
+    app.state.easyocr_reader = easyocr.Reader(['en'] , gpu=True)
+
+    yield 
+
+    
 
 async def verify_session(authorization : Annotated[str | None, Header()] = None):
 
@@ -193,14 +208,14 @@ async def datasetMetadata(session_cookie : httpx.Cookies , dataset_name : str):
 
 
 @app.post("/field_mapping/{upload_id}")
-async def fieldMapping(session_cookie : Annotated[httpx.Cookies , Depends(verify_session)] , upload_id : str):
+async def fieldMapping(session_cookie : Annotated[httpx.Cookies , Depends(verify_session)] , upload_id : str , request : Request):
 
     (file_path , dataset_name) = (uploadsDict[upload_id]["file_path"] , uploadsDict[upload_id]["dataset_name"])
 
 
 
     output_path =  await asyncio.to_thread(image_processing , file_path)
-    text_content = await asyncio.to_thread(getOcrResult , output_path)
+    text_content = await asyncio.to_thread(getOcrResult , output_path , request.app.state.model , request.app.state.image_processor , request.app.state.easyocr_reader)
     metaData = await datasetMetadata(session_cookie , dataset_name)
 
     id_to_name = {}
