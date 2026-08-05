@@ -2,6 +2,7 @@
 import cv2
 from PIL import Image
 
+
 def getOcrResult(output_path , model , image_processor , easyocr_reader) -> str:
 
 
@@ -32,11 +33,48 @@ def getOcrResult(output_path , model , image_processor , easyocr_reader) -> str:
     horizontal_list = result[0][0]
 
     img_test = preprocessed_image.copy()
+
+    visited_list = []
+    finished_groups = []
+    stack = []
+
+    for box in horizontal_list:
+        if box in visited_list:
+            continue 
+        else:
+      
+            stack.append(box)
+            brand_new_group = []
+
+            while len(stack) != 0:
+
+                main_box = stack.pop()
+                visited_list.append(main_box)
+                brand_new_group.append(main_box)
+                
+                x_min_main , x_max_main , y_min_main , y_max_main = main_box
+                threshold = (y_max_main + y_min_main)/2
+                
+
+                for another_box in horizontal_list:
+                    _ , _ , y_min_another , y_max_another = another_box
+                    if another_box not in visited_list and (y_min_another <= threshold and y_max_another >= threshold):
+                        brand_new_group.append(another_box)
+                        stack.append(another_box)
+                        visited_list.append(another_box)
+
+                
+            finished_groups.append(brand_new_group)
+
+
     cropped_list = []
     
     for box in horizontal_list:
-      x_min , x_max , y_min , y_max = box
-      cropped_list.append(img_test[y_min : y_max , x_min : x_max].copy())
+        x_min , x_max , y_min , y_max = box
+        cropped_list.append(img_test[y_min : y_max , x_min : x_max].copy())
+                    
+            
+            
 
     results_array = []
     for img in cropped_list:
@@ -47,6 +85,10 @@ def getOcrResult(output_path , model , image_processor , easyocr_reader) -> str:
       results = image_processor.post_process_text_recognition(outputs)
 
       results_array.append(results["text"])
+
+    
+
+    
 
     return results_array
         
