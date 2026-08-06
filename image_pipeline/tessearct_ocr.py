@@ -22,8 +22,9 @@ def getOcrResult(output_path , model , image_processor , easyocr_reader) -> str:
 
     # ----------------------------------------------------------------------------------
 
-
+    # ----------------------------------------------------------------------------------
     #NEW OCR CODE 
+    
 
     file_path = output_path
     preprocessed_image = cv2.imread(file_path , cv2.IMREAD_UNCHANGED)
@@ -69,35 +70,40 @@ def getOcrResult(output_path , model , image_processor , easyocr_reader) -> str:
             
             finished_groups.append(brand_new_group)
 
+    for group in finished_groups:
+        group.sort(key = lambda x : x[0])
 
-    cropped_list = []
-    
-    for box in horizontal_list:
-        x_min , x_max , y_min , y_max = box
-        cropped_list.append(img_test[y_min : y_max , x_min : x_max].copy())
-                    
-            
-            
+    finished_groups.sort(key = lambda group : max([item[3] for item in group])) 
+
 
     results_array = []
-    for img in cropped_list:
-      converted_image = Image.fromarray(cv2.cvtColor(img , cv2.COLOR_BGR2RGB))
     
-      inputs = image_processor(images=converted_image, return_tensors="pt").to(model.device)
-      outputs = model(**inputs)
-      results = image_processor.post_process_text_recognition(outputs)
+    for group in finished_groups:
 
-      results_array.append(results["text"])
+        group_text = []
+        
+        for box in group:
+            x_min , x_max , y_min , y_max = box
+            img = img_test[y_min : y_max , x_min : x_max].copy()
 
-    
-
-    
-
-    return results_array
+            converted_image = Image.fromarray(cv2.cvtColor(img , cv2.COLOR_BGR2RGB))
+          
+            inputs = image_processor(images=converted_image, return_tensors="pt").to(model.device)
+            outputs = model(**inputs)
+            results = image_processor.post_process_text_recognition(outputs)
+      
+            group_text.append(results[0]["text"])
+        
+        results_array.append(" ".join(group_text))       
         
         
     
 
+    return "\n".join(results_array)
+        
+        
+    
+# ----------------------------------------------------------------------------------
 
 
 
