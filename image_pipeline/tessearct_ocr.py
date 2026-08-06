@@ -42,28 +42,31 @@ def getOcrResult(output_path , model , image_processor , easyocr_reader) -> str:
         if box in visited_list:
             continue 
         else:
-      
+
             stack.append(box)
             brand_new_group = []
 
             while len(stack) != 0:
 
                 main_box = stack.pop()
-                visited_list.append(main_box)
-                brand_new_group.append(main_box)
-                
+
+                if main_box not    in visited_list:
+                    visited_list.append(main_box)
+
+                    brand_new_group.append(main_box)
+
                 x_min_main , x_max_main , y_min_main , y_max_main = main_box
                 threshold = (y_max_main + y_min_main)/2
                 
 
                 for another_box in horizontal_list:
                     _ , _ , y_min_another , y_max_another = another_box
-                    if another_box not in visited_list and (y_min_another <= threshold and y_max_another >= threshold):
+                    another_threshold = (y_max_another + y_min_another)/2
+                    if another_box not in visited_list and ((y_min_another <= threshold and y_max_another >= threshold) or (y_min_main <= another_threshold and y_max_main >= another_threshold)):
                         brand_new_group.append(another_box)
                         stack.append(another_box)
                         visited_list.append(another_box)
-
-                
+            
             finished_groups.append(brand_new_group)
 
 
