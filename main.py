@@ -19,6 +19,16 @@ from image_pipeline.image_processing import image_processing
 from image_pipeline.tessearct_ocr import getOcrResult
 from llm_pipeline.llm_text_to_fiels import llm_field_mapping
 
+
+@asynccontextmanager
+async def lifespan(app : FastAPI):
+    model_path = "PaddlePaddle/PP-OCRv5_mobile_rec_safetensors"
+    app.state.model = AutoModelForTextRecognition.from_pretrained(model_path, device_map="auto")
+    app.state.image_processor = AutoImageProcessor.from_pretrained(model_path)
+    app.state.easyocr_reader = easyocr.Reader(['en'] , gpu=True)
+
+    yield 
+
 app = FastAPI(lifespan = lifespan)
 
 SESSION_TTL_SECONDS = 3600
@@ -48,16 +58,6 @@ load_dotenv()
 cookiesDict = {}
 uploadsDict = {}
 
-@asynccontextmanager
-async def lifespan(app : FastAPI):
-    model_path = "PaddlePaddle/PP-OCRv5_mobile_rec_safetensors"
-    app.state.model = AutoModelForTextRecognition.from_pretrained(model_path, device_map="auto")
-    app.state.image_processor = AutoImageProcessor.from_pretrained(model_path)
-    app.state.easyocr_reader = easyocr.Reader(['en'] , gpu=True)
-
-    yield 
-
-    
 
 async def verify_session(authorization : Annotated[str | None, Header()] = None):
 
@@ -247,7 +247,13 @@ async def fieldMapping(session_cookie : Annotated[httpx.Cookies , Depends(verify
         raise HTTPException(status_code = 400  , detail = "llm failed to map fields correctly . Please Upload clear photo ")
 
     except Exception as e:
-        raise HTTPException(status_code = int(e.args[0]) , detail = "Failed to connect to llm")
+
+        if isinstance(e , httpx.RequestError):
+            raise HTTPException(status_code = 502 , detail = "Some network error has occured")
+            # 502 is for bad gateway
+        else:
+        
+            raise HTTPException(status_code = int(e.args[0]) , detail = "Failed to connect to llm")
 
 
 @app.post("/submit/{upload_id}")
