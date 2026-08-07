@@ -45,7 +45,5 @@ def image_processing(file_path):
         # contour_path = str(Path(__file__).parent) + "/images/" + "contour" + ".png"
         cv2.imwrite(output_path  , adaptive_threshold_image)
         # cv2.imwrite(contour_path  ,contours_img )
-
+        
         return output_path
-  
-image_processing("real_sample_handwritten.jpg")
